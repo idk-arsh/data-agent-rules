@@ -141,6 +141,10 @@ What it costs, honestly:
 
 Next: [ADE-bench](https://github.com/dbt-labs/ade-bench) (dbt Labs' benchmark for data agents), to check the rules don't make agents worse at real dbt work, and runs on Codex and Gemini CLI.
 
+## Using it at work?
+
+Tell us: add a line to [`ADOPTERS.md`](ADOPTERS.md) or open a ["We use this" issue](https://github.com/idk-arsh/data-agent-rules/issues/new?template=we-use-this.yml). It's the main way we decide what to build next.
+
 ## Contributing
 
 Rules stay few and short. A new rule needs a scenario in `evals/` that shows the problem, and a run that shows the rule fixes it. New skills and engine recipes (Postgres, Redshift, ClickHouse) are welcome.

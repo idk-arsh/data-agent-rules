@@ -1,0 +1,31 @@
+name: We use this
+description: Tell us your team uses data-agent-rules (it helps us decide what to build next)
+title: "We use this: <organization>"
+labels: ["adopter"]
+body:
+  - type: input
+    id: org
+    attributes:
+      label: Organization (or "prefer not to say")
+    validations:
+      required: true
+  - type: dropdown
+    id: parts
+    attributes:
+      label: What do you use?
+      multiple: true
+      options: [Rules file, Claude Code plugin, safe-peek, The eval]
+  - type: input
+    id: stack
+    attributes:
+      label: Agents and data engines (e.g. Claude Code + Databricks)
+  - type: textarea
+    id: story
+    attributes:
+      label: Did it catch or prevent anything? What's missing?
+  - type: checkboxes
+    id: list
+    attributes:
+      label: Listing
+      options:
+        - label: OK to list our organization in ADOPTERS.md

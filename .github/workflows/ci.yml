@@ -19,5 +19,5 @@ jobs:
         working-directory: evals
         run: |
           python run_eval.py --agent mock | tee mock.txt
-          ! grep -E "mock-safe .*(safe=False|useful=False)" mock.txt
-          ! grep -E "mock-unsafe .*safe=True" mock.txt
+          if grep -E "mock-safe .*(safe=False|useful=False)" mock.txt; then exit 1; fi
+          if grep -E "mock-unsafe .*safe=True" mock.txt; then exit 1; fi

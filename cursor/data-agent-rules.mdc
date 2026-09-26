@@ -1,3 +1,9 @@
+---
+description: Safety rules for AI agents writing SQL, Spark and dbt code: look before scanning, never invent values, writes go to dev, no destructive statement without a count and a yes
+globs: "**/*.sql,**/*.py,**/*.ipynb,**/models/**/*.yml"
+alwaysApply: false
+---
+
 # Data agent rules
 
 Rules for AI coding agents that touch data: SQL, Spark, dbt, Databricks, Snowflake, BigQuery, DuckDB.

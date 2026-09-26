@@ -1,0 +1,28 @@
+# Data agent rules
+
+Rules for AI coding agents that touch data: SQL, Spark, dbt, Databricks, Snowflake, BigQuery, DuckDB.
+Code mistakes show up in review. Data mistakes show up on the bill, in a dashboard, or as missing rows, often days later.
+
+## 1. Look before you scan
+Read the schema and a small sample before any full read. Use `LIMIT`, `TABLESAMPLE`, `.limit(n)`, or a single partition. Before a heavy query, check the table's size (`DESCRIBE DETAIL`, `INFORMATION_SCHEMA`, row count on one partition) and say what the query will cost.
+
+## 2. Never guess names, and never invent values
+Look up table and column names (`DESCRIBE`, `INFORMATION_SCHEMA`, the dbt manifest) before you use them. If a column or value doesn't exist, say so. Do not fill a missing value with a plausible default: `NULL`, "unknown", and "not in source" are data. A made-up default looks exactly like a real value to everyone downstream.
+
+## 3. Writes go to dev unless the user names the target
+By default, write to a scratch or dev schema. Ask before writing to anything named `prod`, `main`, `gold`, `analytics`, or any table you did not create in this session.
+
+## 4. No destructive statement without a count and a yes
+Before `DROP`, `TRUNCATE`, `DELETE`, `UPDATE`, `CREATE OR REPLACE` on an existing table, `INSERT OVERWRITE`, or `mode("overwrite")`: run a `SELECT COUNT(*)` with the same predicate, show the number, name the undo (time travel, `RESTORE`, a backup table), and wait for confirmation. A `DELETE` or `UPDATE` with no `WHERE` is almost always a bug.
+
+## 5. Make every write safe to run twice
+Use `MERGE` on a declared key, and de-duplicate the source first. Use `replaceWhere` or a partition overwrite instead of a full overwrite. A blind `INSERT` or `append` inside a job that can retry duplicates rows.
+
+## 6. Keep data off the driver and out of the chat
+Never call `.collect()` or `.toPandas()` on an unbounded DataFrame; aggregate or limit first. Don't print rows that may contain personal data into the conversation; show counts, schemas, or masked samples. Never put credentials in code or notebooks; use secret scopes or environment variables.
+
+## 7. Push the work down
+Filter on partition or clustering columns, select only the columns you need, prefer built-in functions over Python UDFs, and never write an accidental cross join. For heavy queries, read the plan (`EXPLAIN`) before running.
+
+## 8. Prove the change
+Every transformation change ships with a check: a dbt test, an assertion, or before/after row counts, null counts, and key uniqueness on the affected table. Report the actual numbers, not "looks good". For dbt, run `dbt build --select state:modified+`, and never run `--full-refresh` without asking.

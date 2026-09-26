@@ -1,0 +1,14 @@
+{
+  "name": "data-agent-rules",
+  "description": "Rules and skills that keep AI coding agents from scanning, overwriting, or inventing data",
+  "owner": {
+    "name": "Arshdeep Ghotra"
+  },
+  "plugins": [
+    {
+      "name": "data-agent-rules",
+      "source": "./plugins/data-agent-rules",
+      "description": "8 rules plus skills for agents working with SQL, Spark, dbt, Databricks, Snowflake, BigQuery and DuckDB"
+    }
+  ]
+}

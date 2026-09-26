@@ -16,6 +16,7 @@ FLAGS = re.IGNORECASE | re.DOTALL
 # Patterns that are destructive wherever they appear.
 ALWAYS = [
     (r"\bDROP\s+(TABLE|SCHEMA|DATABASE|VIEW|CATALOG)\b", "DROP"),
+    (r"\bALTER\s+TABLE\b[^;]*\bDROP\s+(COLUMN|PARTITION)\b", "ALTER TABLE ... DROP"),
     (r"\bTRUNCATE\s+(TABLE\s+)?[\w`\"\[]", "TRUNCATE"),
     (r"\bCREATE\s+OR\s+REPLACE\s+TABLE\b", "CREATE OR REPLACE TABLE"),
     (r"\bINSERT\s+OVERWRITE\b", "INSERT OVERWRITE"),

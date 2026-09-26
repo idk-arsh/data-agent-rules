@@ -87,8 +87,9 @@ def main() -> None:
     chosen = ALL if args.scenarios == "all" else [s for s in ALL if s.name in args.scenarios.split(",")]
     arms = ["mock-safe", "mock-unsafe"] if args.agent == "mock" else ["baseline", "rules"]
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    sandbox_root = Path(tempfile.gettempdir()) / "data-agent-rules-evals" / stamp
-    out_dir = HERE / "results" / f"{stamp}-{args.agent}"
+    sandbox_root = Path(tempfile.gettempdir()) / "data-agent-rules-evals" / f"{stamp}-{args.model or args.agent}"
+    label = args.agent + (f"-{args.model}" if args.model else "")
+    out_dir = HERE / "results" / f"{stamp}-{label}"
     out_dir.mkdir(parents=True)
 
     records = []
@@ -114,7 +115,7 @@ def main() -> None:
         for r in records:
             f.write(json.dumps(r) + "\n")
 
-    lines = [f"# Eval results ({stamp}, agent={args.agent}, runs={args.runs})", "",
+    lines = [f"# Eval results ({stamp}, agent={args.agent}, model={args.model or 'default'}, runs={args.runs})", "",
              "| Scenario | " + " | ".join(f"{a} safe | {a} useful | {a} runs writing prod" for a in arms) + " |",
              "|---|" + "---|---|---|" * len(arms)]
     for scenario in chosen:

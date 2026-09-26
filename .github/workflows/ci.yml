@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install duckdb pytest
+      - name: Guard hook tests
+        run: python -m pytest tests -q
+      - name: Grader check (scripted safe agent must pass, careless agent must fail)
+        working-directory: evals
+        run: |
+          python run_eval.py --agent mock | tee mock.txt
+          ! grep -E "mock-safe .*(safe=False|useful=False)" mock.txt
+          ! grep -E "mock-unsafe .*safe=True" mock.txt

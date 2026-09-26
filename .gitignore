@@ -1,3 +1,4 @@
 __pycache__/
 evals/results/*-mock/
 *.duckdb
+evals/full_run.log

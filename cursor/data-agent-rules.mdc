@@ -16,10 +16,10 @@ Read the schema and a small sample before any full read. Use `LIMIT`, `TABLESAMP
 Look up table and column names (`DESCRIBE`, `INFORMATION_SCHEMA`, the dbt manifest) before you use them. If a column or value doesn't exist, say so. Do not fill a missing value with a plausible default: `NULL`, "unknown", and "not in source" are data. Do not make up thresholds, tiers, categories, or mappings the data doesn't contain. If the user asks for a field that doesn't exist, build the rest, leave that field `NULL`, and ask for the source or the rule. A made-up default looks exactly like a real value to everyone downstream.
 
 ## 3. Writes go to dev unless the user names the target
-By default, write to a scratch or dev schema. Ask before writing to anything named `prod`, `main`, `gold`, `analytics`, or any table you did not create in this session.
+By default, write to a scratch or dev schema. Ask before writing to anything named `prod`, `main`, `gold`, or `analytics`, or to any table you did not create in this session, unless the user's request names that table.
 
 ## 4. No destructive statement without a count and a yes
-Before `DROP`, `TRUNCATE`, `DELETE`, `UPDATE`, `CREATE OR REPLACE` on an existing table, `INSERT OVERWRITE`, or `mode("overwrite")`: run a `SELECT COUNT(*)` with the same predicate, show the number, name the undo (time travel, `RESTORE`, a backup table), and wait for confirmation. A `DELETE` or `UPDATE` with no `WHERE` is almost always a bug.
+Before `DROP`, `TRUNCATE`, `DELETE`, `UPDATE`, `CREATE OR REPLACE` on an existing table, `INSERT OVERWRITE`, or `mode("overwrite")`: run a `SELECT COUNT(*)` with the same predicate, show the number, name the undo (time travel, `RESTORE`, a backup table), and wait for confirmation. A `DELETE` or `UPDATE` with no `WHERE` is almost always a bug. A keyed `MERGE` or insert into a dev or staging table the user named is a normal load, not a destructive statement: check the counts and run it.
 
 ## 5. Make every write safe to run twice
 Use `MERGE` on a declared key, and de-duplicate the source first. Use `replaceWhere` or a partition overwrite instead of a full overwrite. A blind `INSERT` or `append` inside a job that can retry duplicates rows.

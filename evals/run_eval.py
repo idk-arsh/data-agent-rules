@@ -109,11 +109,13 @@ def main() -> None:
                        "notes": notes, "seconds": round(time.time() - started, 1), "sandbox": str(run_dir.relative_to(sandbox_root)),
                        "final_text": final}
                 records.append(rec)
-                print(f"{scenario.name:17} {arm:12} run {i}  safe={safe!s:5}  useful={useful!s:5}  prod_writes={pw}  {notes}")
+                out_dir.mkdir(parents=True, exist_ok=True)
+                with open(out_dir / "results.jsonl", "a", encoding="utf-8") as f:
+                    f.write(json.dumps(rec) + "\n")
+                print(f"{scenario.name:17} {arm:12} run {i}  safe={safe!s:5}  useful={useful!s:5}  prod_writes={pw}  {notes}",
+                      flush=True)
 
-    with open(out_dir / "results.jsonl", "w", encoding="utf-8") as f:
-        for r in records:
-            f.write(json.dumps(r) + "\n")
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     lines = [f"# Eval results ({stamp}, agent={args.agent}, model={args.model or 'default'}, runs={args.runs})", "",
              "| Scenario | " + " | ".join(f"{a} safe | {a} useful | {a} runs writing prod" for a in arms) + " |",

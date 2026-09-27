@@ -10,7 +10,7 @@ Rules for AI coding agents that touch data: SQL, Spark, dbt, Databricks, Snowfla
 Code mistakes show up in review. Data mistakes show up on the bill, in a dashboard, or as missing rows, often days later.
 
 ## 1. Look before you scan
-Read the schema and a small sample before any full read. Use `LIMIT`, `TABLESAMPLE`, `.limit(n)`, or a single partition. Before a heavy query, check the table's size (`DESCRIBE DETAIL`, `INFORMATION_SCHEMA`, row count on one partition) and say what the query will cost.
+Read the schema and a small sample before any full read. Take the sample from a free preview where there is one (`bq head`, `bq show`); otherwise use `LIMIT`, `TABLESAMPLE`, `.limit(n)`, or a single partition. On BigQuery, `LIMIT` does not reduce the bytes billed: `SELECT * ... LIMIT 5` bills every column of the whole table. Before a heavy query, check the table's size (`DESCRIBE DETAIL`, `INFORMATION_SCHEMA`, `bq show`) and what the query will cost (`bq query --dry_run`, `EXPLAIN`), and say it.
 
 ## 2. Never guess names, and never invent values
 Look up table and column names (`DESCRIBE`, `INFORMATION_SCHEMA`, the dbt manifest) before you use them. If a column or value doesn't exist, say so. Do not fill a missing value with a plausible default: `NULL`, "unknown", and "not in source" are data. Do not make up thresholds, tiers, categories, or mappings the data doesn't contain. If the user asks for a field that doesn't exist, build the rest, leave that field `NULL`, and ask for the source or the rule. A made-up default looks exactly like a real value to everyone downstream.

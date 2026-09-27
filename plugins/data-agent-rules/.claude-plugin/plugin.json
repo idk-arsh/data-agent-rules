@@ -1,10 +1,21 @@
 {
   "name": "data-agent-rules",
-  "version": "0.4.0",
-  "description": "Rules and skills that keep AI coding agents from scanning, overwriting, or inventing data. Loads 8 data rules at session start and asks before destructive SQL.",
+  "version": "0.5.0",
+  "description": "Rules and skills that keep AI coding agents from scanning, overwriting, or inventing data. Loads 8 data rules at session start, asks before destructive SQL, and prices BigQuery queries before they run.",
   "author": {
     "name": "Arshdeep Ghotra"
   },
   "license": "MIT",
-  "keywords": ["data-engineering", "sql", "spark", "dbt", "databricks", "snowflake", "bigquery", "duckdb", "safety"]
+  "keywords": [
+    "data-engineering",
+    "sql",
+    "spark",
+    "dbt",
+    "databricks",
+    "snowflake",
+    "bigquery",
+    "duckdb",
+    "safety",
+    "cost"
+  ]
 }

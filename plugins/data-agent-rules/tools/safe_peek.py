@@ -100,7 +100,7 @@ def run_query(sql: str, db: str | None, url: str | None, limit: int | None):
         try:
             import sqlalchemy
         except ImportError:
-            sys.exit("--url needs sqlalchemy: pip install sqlalchemy")
+            raise RuntimeError("--url needs sqlalchemy: pip install sqlalchemy")
         eng = sqlalchemy.create_engine(url)
         with eng.connect() as con:
             q = f"SELECT * FROM ({sql}) AS safe_peek_q" + (f" LIMIT {limit}" if limit else "")
@@ -138,6 +138,37 @@ def print_profile(names, rows, flagged):
             print(f"    {c:>7}  {s}")
 
 
+def peek(sql: str, db: str | None = None, url: str | None = None, limit: int = DEFAULT_LIMIT,
+         profile: bool = False) -> tuple[int, str]:
+    """(exit code, printed output) for one masked preview; used by the CLI and the MCP server."""
+    import contextlib
+    import io
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        code = _peek(sql, db, url, limit, profile)
+    return code, buf.getvalue()
+
+
+def _peek(sql, db, url, limit, profile) -> int:
+    if not READ_ONLY.match(sql) or re.search(r";\s*\S", sql):
+        print("safe_peek runs one read-only query (SELECT/WITH/DESCRIBE). Use your normal runner for writes.")
+        return 2
+    log = os.environ.get("SAFE_PEEK_LOG")
+    if log:
+        import json
+        import time
+        with open(log, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"t": time.time(), "sql": sql, "via": "safe_peek"}) + "\n")
+    try:
+        names, rows = run_query(sql, db, url, 100_000 if profile else limit)
+    except Exception as e:  # show the database error, never the data
+        print(f"ERROR: {e}")
+        return 1
+    flagged = personal_columns(names, rows)
+    (print_profile if profile else print_rows)(names, rows, flagged)
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Preview query results with personal data masked.")
     ap.add_argument("sql")
@@ -146,24 +177,9 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help="rows to show (default 20)")
     ap.add_argument("--profile", action="store_true", help="shapes and counts only, over up to 100k rows")
     args = ap.parse_args()
-
-    if not READ_ONLY.match(args.sql) or re.search(r";\s*\S", args.sql):
-        print("safe_peek runs one read-only query (SELECT/WITH/DESCRIBE). Use your normal runner for writes.")
-        return 2
-    log = os.environ.get("SAFE_PEEK_LOG")
-    if log:
-        import json
-        import time
-        with open(log, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"t": time.time(), "sql": args.sql, "via": "safe_peek"}) + "\n")
-    try:
-        names, rows = run_query(args.sql, args.db, args.url, 100_000 if args.profile else args.limit)
-    except Exception as e:  # show the database error, never the data
-        print(f"ERROR: {e}")
-        return 1
-    flagged = personal_columns(names, rows)
-    (print_profile if args.profile else print_rows)(names, rows, flagged)
-    return 0
+    code, out = peek(args.sql, args.db, args.url, args.limit, args.profile)
+    print(out, end="")
+    return code
 
 
 if __name__ == "__main__":

@@ -12,9 +12,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install duckdb pytest
+      - run: pip install duckdb pytest mcp
       - name: Guard hook tests
         run: python -m pytest tests -q
+      - name: MCP server end to end (installed package)
+        run: |
+          pip install .
+          python tests/mcp_smoke.py data-agent-rules-mcp
       - name: Grader check (scripted safe agent must pass, careless agent must fail)
         working-directory: evals
         run: |

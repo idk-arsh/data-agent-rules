@@ -3,3 +3,6 @@ evals/results/*-mock/
 *.duckdb
 evals/full_run.log
 evals/*.log
+dist/
+*.egg-info/
+build/

@@ -25,6 +25,8 @@ Full text: [`AGENTS.md`](AGENTS.md). It's short on purpose, because agents follo
 
 ## Install
 
+**Cursor, Claude Desktop, VS Code, Windsurf (MCP server: masked previews + cost checks):** see [MCP server](#mcp-server-safe_peek-and-cost_check-in-cursor-claude-desktop-vs-code-and-windsurf).
+
 **Claude Code (plugin: rules + skills + a destructive-SQL seatbelt)**
 ```
 /plugin marketplace add idk-arsh/data-agent-rules
@@ -123,6 +125,30 @@ What this shows, and what it cost us:
 - One Haiku run with cost_check asked permission to run `bq show` instead of running it (not useful). The first Haiku no-rules pass had 2 runs blocked by the eval's permission allowlist; we reran that arm and report the rerun.
 
 **Limits:** the stand-in `bq` bills from DuckDB's query plan (columns read × partitions not pruned). It doesn't model clustering, caching, or the 10 MB minimum per table beyond a flat floor. The hook covers the `bq` CLI only; queries sent from Python clients or notebooks aren't checked. The Snowflake and Databricks paths are unit-tested against documented output formats, but not yet run against live accounts.
+
+## MCP server: safe_peek and cost_check in Cursor, Claude Desktop, VS Code and Windsurf
+
+The same two tools as an MCP server, for agents that don't run Claude Code hooks. `safe_peek` returns rows with personal data masked; `cost_check` prices a query before it runs. It also serves the 8 rules as an MCP prompt (`data-agent-rules`).
+
+Needs [uv](https://docs.astral.sh/uv/). Add this to `.cursor/mcp.json` (Cursor), `claude_desktop_config.json` (Claude Desktop) or your client's MCP config ([one-click install for Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=data-agent-rules&config=eyJjb21tYW5kIjogInV2eCIsICJhcmdzIjogWyItLWZyb20iLCAiZ2l0K2h0dHBzOi8vZ2l0aHViLmNvbS9pZGstYXJzaC9kYXRhLWFnZW50LXJ1bGVzIiwgImRhdGEtYWdlbnQtcnVsZXMtbWNwIl19)):
+
+```json
+{
+  "mcpServers": {
+    "data-agent-rules": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/idk-arsh/data-agent-rules", "data-agent-rules-mcp"],
+      "env": { "DATA_AGENT_RULES_URL": "postgresql://readonly@localhost/analytics" }
+    }
+  }
+}
+```
+
+VS Code: `code --add-mcp '{"name":"data-agent-rules","command":"uvx","args":["--from","git+https://github.com/idk-arsh/data-agent-rules","data-agent-rules-mcp"]}'`
+
+Set `DATA_AGENT_RULES_URL` (any SQLAlchemy URL; add `sqlalchemy` and the driver with `--with sqlalchemy --with psycopg2-binary` after `uvx`) or `DATA_AGENT_RULES_DB` (a DuckDB file) as the default connection for `safe_peek`; each call can pass its own. `cost_check` uses your own `bq` login, the `snow` CLI, or `DATABRICKS_*` variables. Point `DATA_AGENT_RULES_URL` at a read-only user: `safe_peek` refuses anything but one `SELECT`/`WITH`/`DESCRIBE`, but a read-only login is the real guarantee.
+
+Tested end to end over stdio on MCP SDK 1.30 and 2.2 (`python tests/mcp_smoke.py`).
 
 Complementary: [destructive_command_guard](https://github.com/Dicklesworthstone/destructive_command_guard) blocks destructive shell commands across many tools. This repo is the data-specific layer: measured rules, PII masking, and an eval.
 

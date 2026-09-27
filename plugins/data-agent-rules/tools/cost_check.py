@@ -47,14 +47,15 @@ def human(n: float) -> str:
 
 
 def bq_command() -> list[str]:
-    return shlex.split(os.environ.get("DATA_AGENT_RULES_BQ", "bq"), posix=os.name != "nt")
+    parts = shlex.split(os.environ.get("DATA_AGENT_RULES_BQ", "bq"), posix=os.name != "nt")
+    return [part.strip('"') for part in parts]  # Windows split keeps quotes around paths
 
 
 def bigquery_bytes(sql: str, extra_flags: list[str] | None = None, timeout: int = 60) -> int:
     """Bytes a BigQuery query would bill, from a free dry run."""
     cmd = bq_command() + ["--format=json", "query", "--dry_run", "--use_legacy_sql=false",
                           *(extra_flags or []), sql]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    proc = subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout)
     return parse_bq_dry_run(proc.stdout + proc.stderr)
 
 
@@ -67,7 +68,7 @@ def parse_bq_dry_run(out: str) -> int:
 
 def snowflake_stats(sql: str, timeout: int = 120) -> dict:
     proc = subprocess.run(["snow", "sql", "--format", "json", "-q", "EXPLAIN USING JSON " + sql],
-                          capture_output=True, text=True, timeout=timeout)
+                          stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout)
     return parse_snowflake_explain(proc.stdout + proc.stderr)
 
 
@@ -105,35 +106,42 @@ ADVICE = ("To scan less: select only the columns you need (SELECT * reads every 
           "LIMIT does not reduce bytes billed on BigQuery.")
 
 
+def estimate(sql: str, engine: str = "bigquery", max_scan: str | None = None,
+             price_per_tib: float | None = None) -> tuple[int, str]:
+    """(exit code, message): 0 under the limit, 2 over, 1 no estimate."""
+    limit = parse_size(max_scan or os.environ.get("DATA_AGENT_RULES_MAX_SCAN", DEFAULT_MAX_SCAN))
+    price = price_per_tib or float(os.environ.get("DATA_AGENT_RULES_TIB_PRICE", DEFAULT_PRICE_PER_TIB))
+    try:
+        if engine == "bigquery":
+            n = bigquery_bytes(sql)
+            line = f"BigQuery will bill {human(n)} (~${n / TIB * price:,.2f} at ${price}/TiB on-demand)."
+        elif engine == "snowflake":
+            s = snowflake_stats(sql)
+            n = s["bytesAssigned"]
+            line = (f"Snowflake will scan {human(n)}, {s.get('partitionsAssigned', '?')} of "
+                    f"{s.get('partitionsTotal', '?')} micro-partitions.")
+        elif engine == "databricks":
+            n = parse_databricks_explain(databricks_plan(sql))
+            line = f"Spark estimates the tables read at {human(n)} (an estimate, before runtime pruning)."
+        else:
+            return 1, f"cost-check: unknown engine {engine!r}; use bigquery, snowflake or databricks"
+    except Exception as e:  # noqa: BLE001 - any failure means no estimate
+        return 1, f"cost-check: no estimate ({e})"
+    if n > limit:
+        return 2, f"{line} Over the {human(limit)} limit. {ADVICE}"
+    return 0, f"{line} Under the {human(limit)} limit."
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Price a warehouse query before it runs.")
     ap.add_argument("sql")
     ap.add_argument("--engine", choices=["bigquery", "snowflake", "databricks"], default="bigquery")
-    ap.add_argument("--max-scan", default=os.environ.get("DATA_AGENT_RULES_MAX_SCAN", DEFAULT_MAX_SCAN))
-    ap.add_argument("--price-per-tib", type=float,
-                    default=float(os.environ.get("DATA_AGENT_RULES_TIB_PRICE", DEFAULT_PRICE_PER_TIB)))
+    ap.add_argument("--max-scan", default=None, help="default 100GB, or DATA_AGENT_RULES_MAX_SCAN")
+    ap.add_argument("--price-per-tib", type=float, default=None, help="default 6.25, or DATA_AGENT_RULES_TIB_PRICE")
     args = ap.parse_args()
-    limit = parse_size(args.max_scan)
-    try:
-        if args.engine == "bigquery":
-            n = bigquery_bytes(args.sql)
-            line = f"BigQuery will bill {human(n)} (~${n / TIB * args.price_per_tib:,.2f} at ${args.price_per_tib}/TiB on-demand)."
-        elif args.engine == "snowflake":
-            s = snowflake_stats(args.sql)
-            n = s["bytesAssigned"]
-            line = (f"Snowflake will scan {human(n)}, {s.get('partitionsAssigned', '?')} of "
-                    f"{s.get('partitionsTotal', '?')} micro-partitions.")
-        else:
-            n = parse_databricks_explain(databricks_plan(args.sql))
-            line = f"Spark estimates the tables read at {human(n)} (an estimate, before runtime pruning)."
-    except Exception as e:  # noqa: BLE001 - any failure means no estimate
-        print(f"cost-check: no estimate ({e})")
-        return 1
-    if n > limit:
-        print(f"{line} Over the {human(limit)} limit. {ADVICE}")
-        return 2
-    print(f"{line} Under the {human(limit)} limit.")
-    return 0
+    code, message = estimate(args.sql, args.engine, args.max_scan, args.price_per_tib)
+    print(message)
+    return code
 
 
 if __name__ == "__main__":

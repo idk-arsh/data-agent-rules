@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "data-agent-rules"
+version = "0.5.0"
+description = "MCP server for AI agents working on data: masked previews (safe_peek) and query cost checks (cost_check)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Arshdeep Ghotra" }]
+keywords = ["mcp", "data-engineering", "sql", "bigquery", "snowflake", "databricks", "duckdb", "pii", "safety"]
+dependencies = ["mcp>=1.2", "duckdb>=1.0"]
+
+[project.optional-dependencies]
+sql = ["sqlalchemy>=2"]
+databricks = ["databricks-sql-connector>=3"]
+
+[project.scripts]
+data-agent-rules-mcp = "data_agent_rules_mcp.server:main"
+
+[project.urls]
+Homepage = "https://github.com/idk-arsh/data-agent-rules"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mcp_server/data_agent_rules_mcp"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"plugins/data-agent-rules/tools/safe_peek.py" = "data_agent_rules_mcp/safe_peek.py"
+"plugins/data-agent-rules/tools/cost_check.py" = "data_agent_rules_mcp/cost_check.py"
+"AGENTS.md" = "data_agent_rules_mcp/AGENTS.md"

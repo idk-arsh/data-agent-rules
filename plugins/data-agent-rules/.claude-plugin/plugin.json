@@ -1,6 +1,6 @@
 {
   "name": "data-agent-rules",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Rules and skills that keep AI coding agents from scanning, overwriting, or inventing data. Loads 8 data rules at session start and asks before destructive SQL.",
   "author": {
     "name": "Arshdeep Ghotra"

@@ -41,7 +41,7 @@ Full text: [`AGENTS.md`](AGENTS.md). It's short on purpose, because agents follo
 | Claude Code (no plugin) | `curl -o CLAUDE.md https://raw.githubusercontent.com/idk-arsh/data-agent-rules/main/AGENTS.md` |
 | Gemini CLI | `curl -o GEMINI.md https://raw.githubusercontent.com/idk-arsh/data-agent-rules/main/AGENTS.md` |
 | GitHub Copilot | `curl -o .github/copilot-instructions.md https://raw.githubusercontent.com/idk-arsh/data-agent-rules/main/AGENTS.md` |
-| Cursor | `curl --create-dirs -o .cursor/rules/data-agent-rules.mdc https://raw.githubusercontent.com/idk-arsh/data-agent-rules/main/rules/data-agent-rules.mdc` |
+| Cursor | "Add to Cursor" on [cursor.directory](https://cursor.directory/plugins/data-agent-rules), or `curl --create-dirs -o .cursor/rules/data-agent-rules.mdc https://raw.githubusercontent.com/idk-arsh/data-agent-rules/main/rules/data-agent-rules.mdc` |
 | Gemini CLI (extension) | `gemini extensions install https://github.com/idk-arsh/data-agent-rules` |
 
 Already have one of these files? Append the rules instead of overwriting it (`>>` instead of `-o`).
